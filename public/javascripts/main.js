@@ -1,8 +1,14 @@
 'use strict';
 
 const $self = {
-
+    rtcConfig: null,
     constraints: { audio: false, video:true }
+
+};
+
+const $peer = {
+
+    connection: new RTCPeerConnection($self.rtcConfig)
 
 };
 
@@ -13,3 +19,12 @@ async function requestUserMedia(constraints) {
    $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
    video.srcObject =  $self.stream;
 }
+
+/**
+* Socket Server Events and Callbacks
+*/
+
+const sc = io();
+sc.on('connect', function() {
+  console.log('Connected to socket.io instance');
+});
