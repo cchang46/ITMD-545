@@ -25,6 +25,15 @@ const namespaces = io.of(/^\/[0-9]{5}$/);
 namespaces.on('connection', function(socket) {
   const namespace = socket.nsp;
   socket.broadcast.emit('connected peer');
+
+  // listen for signals
+  socket.on('signal', function(signal) {
+      socket.broadcast.emit('signal', signal);
+    })
+  // listen for disconnects
+  socket.on('disconnect', function() {
+    namespace.emit('disconnected peer');
+  })
 });
 
 module.exports = { app, io };
