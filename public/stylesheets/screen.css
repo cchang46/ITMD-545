@@ -16,12 +16,51 @@ a {
   color: #EEE;
 }
 
-#call-button {
+button {
   box-sizing: border-box;
   width: 100px;
 }
 
 video {
-  display: block;
-  max-width: 100%;
+  display: none;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+main {
+  width: 95%;
+  margin: 0 auto;
+}
+
+.pets {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+}
+
+.pets li {
+  width: 100%;
+  text-align: center;
+}
+
+.pets img {
+  width: 100%;
+}
+
+@media only screen and (min-width: 768px) {
+  /* For tablet: */
+  .pets li {
+    width: 50%;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  /* For desktop: */
+  .pets li {
+    width: 33%;
+  }
 }

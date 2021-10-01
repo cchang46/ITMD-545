@@ -8,16 +8,49 @@
 </head>
 <body>
   <header id="header">
-    <h1>Hi Myself!</h1>
-    <button type="button" class="join" id="call-button">Join Chat</button>
-  </header>
-  <video id="self"
-    autoplay
-    muted
-    playsinline>
-  </video>
+    <h1>Adopt Me!</h1>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="javascripts/main.js"></script>
+  </header>
+  <main>
+    <video id="self"
+      autoplay
+      muted
+      playsinline>
+    </video>
+    <ul class="pets">
+      <li>
+        <img src="/images/yuuki.jpg" alt="Yuuki" />
+        <label for="pname">Yuuki </label><br>
+        <button type="button" class="join" id="call-yuuki">Join Chat</button>
+      </li>
+      <li>
+        <img src="/images/sandy.jpg" alt="Sandy" />
+        <label for="pname">Sandy </label><br>
+        <button type="button" class="join" id="call-sandy">Join Chat</button>
+      </li>
+      <li>
+        <img src="/images/ted.jpg" alt="Ted" />
+        <label for="pname">Ted </label><br>
+        <button type="button" class="join" id="call-ted">Join Chat</button>
+      </li>
+      <li>
+        <img src="/images/dolly.jpg" alt="Dolly" />
+        <label for="pname">Dolly </label><br>
+        <button type="button" class="join" id="call-dolly">Join Chat</button>
+      </li>
+      <li>
+        <img src="/images/dexter.jpg" alt="Dexter" />
+        <label for="pname">Dexter </label><br>
+        <button type="button" class="join" id="call-dexter">Join Chat</button>
+      </li>
+      <li>
+        <img src="/images/louis.jpg" alt="Louis" />
+        <label for="pname">Louis </label><br>
+        <button type="button" class="join" id="call-louis">Join Chat</button>
+      </li>
+    </ul>
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="javascripts/main.js"></script>
 </body>
 </html>
