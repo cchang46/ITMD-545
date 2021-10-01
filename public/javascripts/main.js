@@ -1,23 +1,30 @@
 'use strict';
 
 const $self = {
-    rtcConfig: null,
-    constraints: { audio: false, video:true }
-
+  rtcConfig: null,
+  constraints: { audio: false, video:true }
 };
 
 const $peer = {
-
-    connection: new RTCPeerConnection($self.rtcConfig)
-
+  connection: new RTCPeerConnection($self.rtcConfig)
 };
 
-requestUserMedia($self.constraints);
-
 async function requestUserMedia(constraints) {
-   const video = document.querySelector('#self');
-   $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
-   video.srcObject =  $self.stream;
+  const video = document.querySelector('#self');
+  $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
+  video.srcObject = $self.stream;
+  video.style.display = 'block';
+}
+
+function stopUserMedia() {
+  if ($self.stream) {
+    $self.stream.getTracks().forEach((track) => {
+      track.stop();
+    });
+    const video = document.querySelector('#self');
+    video.srcObject = null;
+    video.style.display = 'none';
+  }
 }
 
 /**
@@ -31,7 +38,7 @@ const sc = io(`/${namespace}`, { autoConnect: false});
 registerScEvents();
 
 
-const button = document.querySelector('#call-button');
+const button = document.querySelector('#call-yuuki');
 button.addEventListener('click', handleButton);
 /* DOM Events */
 function handleButton(e) {
@@ -39,10 +46,12 @@ function handleButton(e) {
   if (button.className === 'join') {
     button.className = 'leave';
     button.innerText = 'Leave Chat';
+    requestUserMedia($self.constraints);
     // joinChat();
   } else {
     button.className = 'join';
     button.innerText = 'Join Chat';
+    stopUserMedia();
     // leaveChat();
   }
 }
