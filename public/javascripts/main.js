@@ -32,8 +32,21 @@ registerScEvents();
 
 
 const button = document.querySelector('#call-button');
-button.addEventListener('click', joinChat);
+button.addEventListener('click', handleButton);
 /* DOM Events */
+function handleButton(e) {
+  const button = e.target;
+  if (button.className === 'join') {
+    button.className = 'leave';
+    button.innerText = 'Leave Chat';
+    // joinChat();
+  } else {
+    button.className = 'join';
+    button.innerText = 'Join Chat';
+    // leaveChat();
+  }
+}
+
 function joinChat() {
    sc.open();
 }

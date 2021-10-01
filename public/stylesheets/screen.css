@@ -7,6 +7,20 @@ a {
   color: #00B7FF;
 }
 
+.join {
+  background: #092;
+  color: #EEE;
+}
+.leave {
+  background: #666;
+  color: #EEE;
+}
+
+#call-button {
+  box-sizing: border-box;
+  width: 100px;
+}
+
 video {
   display: block;
   max-width: 100%;
