@@ -30,15 +30,17 @@ const sc = io(`/${namespace}`, { autoConnect: false});
 
 registerScEvents();
 
-/* DOM Events */
 
 const button = document.querySelector('#call-button');
+button.addEventListener('click', joinChat);
+/* DOM Events */
+function joinChat() {
+   sc.open();
+}
 
-button.addEventListener('click', function() {
-  sc.open();
-});
-
-
+function leaveChat() {
+   sc.close();
+}
 
 /* Signaling Channel Events */
 
