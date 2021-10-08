@@ -13,14 +13,12 @@ const $peer = {
   connection: new RTCPeerConnection($self.rtcConfig)
 };
 
-
-
 async function requestUserMedia(constraints) {
   const video = document.querySelector('#self-video');
   $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
   video.srcObject = $self.stream;
-  video.style.display = 'block';
-  return $self.stream
+  document.querySelector('#live-chat').style.display = 'flex';
+  return $self.stream;
 }
 
 function stopUserMedia() {
@@ -30,10 +28,10 @@ function stopUserMedia() {
     });
     const selfVideo = document.querySelector('#self-video');
     selfVideo.srcObject = null;
-    selfVideo.style.display = 'none';
     const peerVideo = document.querySelector('#peer-video');
     peerVideo.srcObject = null;
     peerVideo.style.display = 'none';
+    document.querySelector('#live-chat').style.display = 'none';
   }
 }
 
@@ -63,6 +61,11 @@ function handleButton(e) {
     leaveChat();
   }
 }
+
+const messenger =  document.querySelector('#messenger');
+messenger.addEventListener('click', () => {
+  document.querySelector('#chat-room').style.display = 'block';
+});
 
 function joinChat() {
    sc.open();

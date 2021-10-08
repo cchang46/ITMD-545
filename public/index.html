@@ -9,19 +9,30 @@
 <body>
   <header id="header">
     <h1>Adopt Me!</h1>
-
   </header>
   <main>
-    <video id="peer-video"
-      autoplay
-      muted
-      playsinline>
-    </video>
-    <video id="self-video"
-      autoplay
-      muted
-      playsinline>
-    </video>
+    <div id="live-chat">
+      <div id="videos">
+        <video id="peer-video"
+          autoplay
+          muted
+          playsinline>
+        </video>
+        <video id="self-video"
+          autoplay
+          muted
+          playsinline>
+        </video>
+        <div id="toolbar">
+          <button id="messenger">Messenger</button>
+        </div>
+      </div>
+      <div id="chat-room">
+        <div id="messages">
+        </div>
+        <input type="text" id="message" placeholder="Enter your message here" />
+      </div>
+    </div>
     <ul class="pets">
       <li>
         <img src="/images/yuuki.jpg" alt="Yuuki" />
