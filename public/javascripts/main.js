@@ -16,7 +16,7 @@ const $peer = {
 
 
 async function requestUserMedia(constraints) {
-  const video = document.querySelector('#self');
+  const video = document.querySelector('#self-video');
   $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
   video.srcObject = $self.stream;
   video.style.display = 'block';
@@ -28,9 +28,12 @@ function stopUserMedia() {
     $self.stream.getTracks().forEach((track) => {
       track.stop();
     });
-    const video = document.querySelector('#self');
-    video.srcObject = null;
-    video.style.display = 'none';
+    const selfVideo = document.querySelector('#self-video');
+    selfVideo.srcObject = null;
+    selfVideo.style.display = 'none';
+    const peerVideo = document.querySelector('#peer-video');
+    peerVideo.srcObject = null;
+    peerVideo.style.display = 'none';
   }
 }
 
@@ -102,11 +105,18 @@ function handleIceCandidate({ candidate }) {
   sc.emit('signal', { candidate:
     candidate });
 }
-function handleRtcTrack() {
+function handleRtcTrack({ streams: [stream] }) {
   console.log('RTC track...');
-  // attach our track to the DOM somehow
+  // attach incoming track to the DOM
+  displayPeer(stream);
 }
 
+/* Video DOM */
+function displayPeer(stream) {
+  const video = document.querySelector("#peer-video");
+  video.style.display = 'block';
+  video.srcObject = stream;
+}
 
 /* Signaling Channel Events */
 

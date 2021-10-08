@@ -28,6 +28,11 @@ video {
   margin: 0 auto;
 }
 
+#self-video {
+  width: 33%;
+  max-width: 266px;
+}
+
 main {
   width: 95%;
   margin: 0 auto;
