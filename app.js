@@ -28,6 +28,7 @@ namespaces.on('connection', function(socket) {
 
   // listen for signals
   socket.on('signal', function(signal) {
+      console.log(signal);
       socket.broadcast.emit('signal', signal);
     })
   // listen for disconnects

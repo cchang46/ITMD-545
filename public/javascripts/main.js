@@ -42,7 +42,7 @@ const namespace = prepareNamespace(window.location.hash, true);
 
 const sc = io(`/${namespace}`, { autoConnect: false});
 
-registerScEvents();
+registerChannelEvents();
 
 const button = document.querySelector('#call-yuuki');
 button.addEventListener('click', handleButton);
@@ -91,46 +91,76 @@ async function handleRtcNegotiation() {
   // send an SDP description
   $self.isMakingOffer = true;
   await $peer.connection.setLocalDescription();
+  console.log('Send description...');
   sc.emit('signal', { description:
     $peer.connection.localDescription });
   $self.isMakingOffer = false;
 }
 function handleIceCandidate({ candidate }) {
   // send ICE candidate
+  console.log('Send ICE candidate...');
   sc.emit('signal', { candidate:
     candidate });
 }
 function handleRtcTrack() {
+  console.log('RTC track...');
   // attach our track to the DOM somehow
 }
 
 
 /* Signaling Channel Events */
 
-function registerScEvents() {
-  sc.on('connect', handleScConnect);
-  sc.on('connected peer', handleScConnectedPeer);
-  sc.on('signal', handleScSignal);
-  sc.on('disconnected peer', handleScDisconnectedPeer);
+function registerChannelEvents() {
+  sc.on('connect', handleChannelConnect);
+  sc.on('connected peer', handleChannelConnectedPeer);
+  sc.on('signal', handleChannelSignal);
+  sc.on('disconnected peer', handleChannelDisconnectedPeer);
 }
 
-
-function handleScConnect() {
+function handleChannelConnect() {
   console.log('Connected to signaling channel!');
 }
-function handleScConnectedPeer() {
+function handleChannelConnectedPeer() {
   console.log('Heard connected peer event!');
   $self.isPolite = true;
 }
-function handleScDisconnectedPeer() {
+function handleChannelDisconnectedPeer() {
   console.log('Heard disconnected peer event!');
 }
-async function handleScSignal({ description, candidate }) {
+async function handleChannelSignal({ description, candidate }) {
   console.log('Heard signal event!');
   if (description) {
     console.log('Received SDP Signal:', description);
+    console.log('isMakingOffer: ', $self.isMakingOffer);
+    console.log('signalingState: ', $peer.connection.signalingState);
+    console.log('isSettingRemoteAnswerPending: ', $self.isSettingRemoteAnswerPending);
+    const offerCollision = description.type === 'offer';
+    console.log('offerCollision: ', offerCollision);
+    $self.isIgnoringOffer = !$self.isPolite && offerCollision;
+    console.log('isIgnoringOffer: ', $self.isIgnoringOffer);
+
+    if ($self.isIgnoringOffer) {
+      return;
+    }
+
+    await $peer.connection.setRemoteDescription(description);
+
+    if (description.type === 'offer') {
+      await $peer.connection.setLocalDescription();
+      sc.emit('signal',
+        { description:
+          $peer.connection.localDescription });
+    }
+
   } else if (candidate) {
     console.log('Received ICE candidate:', candidate);
+    try {
+      await $peer.connection.addIceCandidate(candidate);
+    } catch(e) {
+      if (!$self.isIgnoringOffer) {
+        console.error('Cannot add ICE candidate for peer', e);
+      }
+    }
   }
 }
 
