@@ -63,9 +63,13 @@ function handleButton(e) {
 }
 
 const messenger =  document.querySelector('#messenger');
-messenger.addEventListener('click', () => {
+messenger.addEventListener('click', handleMessenger);
+
+function handleMessenger(e){
   document.querySelector('#chat-room').style.display = 'block';
-});
+  const dc = $peer.connection.createDataChannel('label');
+}
+
 
 function joinChat() {
    sc.open();
@@ -90,6 +94,8 @@ function registerRtcEvents(peer) {
     .onicecandidate = handleIceCandidate;
   peer.connection
     .ontrack = handleRtcTrack;
+  peer.connection
+    .ondatachannel = handleRtcDataChannel;
 }
 
 async function handleRtcNegotiation() {
@@ -113,6 +119,13 @@ function handleRtcTrack({ streams: [stream] }) {
   // attach incoming track to the DOM
   displayPeer(stream);
 }
+
+function handleRtcDataChannel(dataChannelEvent){
+
+   console.log('Heard data channel', dataChannelEvent.channel.label);
+
+}
+
 
 /* Video DOM */
 function displayPeer(stream) {
@@ -147,7 +160,14 @@ async function handleChannelSignal({ description, candidate }) {
     console.log('isMakingOffer: ', $self.isMakingOffer);
     console.log('signalingState: ', $peer.connection.signalingState);
     console.log('isSettingRemoteAnswerPending: ', $self.isSettingRemoteAnswerPending);
-    const offerCollision = description.type === 'offer';
+    const readyForOffer =
+        !$self.isMakingOffer &&
+        ($peer.connection.signalingState === 'stable'
+          || $self.isSettingRemoteAnswerPending);
+
+    console.log('readyForOffer: ', readyForOffer);
+    const offerCollision = description.type === 'offer' // && !readyForOffer;
+
     console.log('offerCollision: ', offerCollision);
     $self.isIgnoringOffer = !$self.isPolite && offerCollision;
     console.log('isIgnoringOffer: ', $self.isIgnoringOffer);
