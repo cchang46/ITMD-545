@@ -166,7 +166,7 @@ async function handleChannelSignal({ description, candidate }) {
           || $self.isSettingRemoteAnswerPending);
 
     console.log('readyForOffer: ', readyForOffer);
-    const offerCollision = description.type === 'offer' // && !readyForOffer;
+    const offerCollision = description.type === 'offer' && !readyForOffer;
 
     console.log('offerCollision: ', offerCollision);
     $self.isIgnoringOffer = !$self.isPolite && offerCollision;
@@ -176,7 +176,9 @@ async function handleChannelSignal({ description, candidate }) {
       return;
     }
 
+    $self.isSettingRemoteAnswerPending = description.type === 'answer';
     await $peer.connection.setRemoteDescription(description);
+    $self.isSettingRemoteAnswerPending = false;
 
     if (description.type === 'offer') {
       await $peer.connection.setLocalDescription();
