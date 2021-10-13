@@ -139,7 +139,19 @@ async function handleRtcNegotiation() {
   console.log('RTC negotiation needed...');
   // send an SDP description
   $self.isMakingOffer = true;
-  await $peer.connection.setLocalDescription();
+  try {
+    await $peer.connection.setLocalDescription();
+  } catch (e) {
+    const offer = await $peer.connection.createOffer();
+    await $peer.connection.setLocalDescription(offer);
+  }finally {
+    // finally, however this was done, send the
+    // localDescription to the remote peer
+    sc.emit('signal', { description:
+      $peer.connection.localDescription });
+  }
+
+  $self.isMakingOffer = false;
   console.log('Send description...');
   sc.emit('signal', { description:
     $peer.connection.localDescription });
@@ -220,10 +232,16 @@ async function handleChannelSignal({ description, candidate }) {
     $self.isSettingRemoteAnswerPending = false;
 
     if (description.type === 'offer') {
-      await $peer.connection.setLocalDescription();
-      sc.emit('signal',
-        { description:
-          $peer.connection.localDescription });
+      try {
+        await $peer.connection.setLocalDescription();
+      } catch(e) {
+        const answer = await $peer.connection.createAnswer();
+        await $peer.connection.setLocalDescription(answer);
+      } finally {
+        sc.emit('signal',
+          { description:
+            $peer.connection.localDescription });
+      }
     }
 
   } else if (candidate) {
