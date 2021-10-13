@@ -62,14 +62,50 @@ function handleButton(e) {
   }
 }
 
+/* Chat Room */
+const chatRoom = document.querySelector('#chat-room');
+chatRoom.addEventListener('submit',handleChatRoom);
+
 const messenger =  document.querySelector('#messenger');
 messenger.addEventListener('click', handleMessenger);
 
 function handleMessenger(e){
-  document.querySelector('#chat-room').style.display = 'block';
-  const dc = $peer.connection.createDataChannel('label');
+  if (!$peer.chatChannel){
+    showChatRoom();
+    $peer.chatChannel = $peer.connection.createDataChannel('label');
+    $peer.chatChannel.onmessage = handleMessage;
+  }
 }
 
+function showChatRoom () {
+  document.querySelector('#chat-room').style.display = 'block';
+}
+
+function handleMessage ({data}) {
+  console.log('received message ', data);
+  appendMessage(data, 'receiver');
+}
+
+function handleChatRoom(e) {
+  e.preventDefault();
+  const form = e.target;
+  const input = form.querySelector('#message');
+  const message = input.value;
+
+  $peer.chatChannel.send(message);
+  console.log('Sender msg:', message);
+  input.value = '';
+  appendMessage(message, 'sender');
+
+}
+
+function appendMessage(message, msgClass) {
+  const messages = document.querySelector('#messages');
+  const li = document.createElement('li');
+  li.className = msgClass;
+  li.innerText = message;
+  messages.appendChild(li);
+}
 
 function joinChat() {
    sc.open();
@@ -80,6 +116,7 @@ function joinChat() {
 function leaveChat() {
    sc.close();
 }
+
 
 /* WebRTC Events */
 function establishCallFeatures(peer) {
@@ -121,9 +158,10 @@ function handleRtcTrack({ streams: [stream] }) {
 }
 
 function handleRtcDataChannel(dataChannelEvent){
-
    console.log('Heard data channel', dataChannelEvent.channel.label);
-
+   dataChannelEvent.channel.onmessage = handleMessage;
+   $peer.chatChannel = dataChannelEvent.channel;
+   showChatRoom();
 }
 
 
@@ -176,8 +214,9 @@ async function handleChannelSignal({ description, candidate }) {
       return;
     }
 
+    console.log('description type: ', description.type);
     $self.isSettingRemoteAnswerPending = description.type === 'answer';
-    await $peer.connection.setRemoteDescription(description);
+    $peer.connection.setRemoteDescription(description);
     $self.isSettingRemoteAnswerPending = false;
 
     if (description.type === 'offer') {
