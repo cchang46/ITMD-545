@@ -67,6 +67,16 @@ video {
   overflow-y: scroll;
   border: 1px solid #999;
   margin-bottom: 5px;
+  list-style-type: none;
+  padding: 0;
+}
+
+#messages .sender {
+
+}
+
+#messages .receiver {
+
 }
 
 #message {

@@ -1,5 +1,7 @@
 'use strict';
 
+const INIT_MESSAGE = '====INIT_MESSAGE====';
+
 const $self = {
   rtcConfig: null,
   constraints: { audio: false, video: true },
@@ -64,17 +66,21 @@ function handleButton(e) {
 
 /* Chat Room */
 const chatRoom = document.querySelector('#chat-room');
-chatRoom.addEventListener('submit',handleChatRoom);
+chatRoom.addEventListener('submit', handleChatRoom);
 
 const messenger =  document.querySelector('#messenger');
-messenger.addEventListener('click', handleMessenger);
+messenger.addEventListener('click', showChatRoom);
 
-function handleMessenger(e){
-  if (!$peer.chatChannel){
-    showChatRoom();
-    $peer.chatChannel = $peer.connection.createDataChannel('label');
-    $peer.chatChannel.onmessage = handleMessage;
+function handleMessenger() {
+  if(!$self.chatChannelPromise) {
+    $self.chatChannelPromise = new Promise((resolve, reject) => {
+      $self.resolveChatChannel = resolve;
+      $peer.chatChannel = $peer.connection.createDataChannel('chat');
+      $peer.chatChannel.onmessage = handleMessage;
+    });
   }
+
+  return $self.chatChannelPromise;
 }
 
 function showChatRoom () {
@@ -82,8 +88,14 @@ function showChatRoom () {
 }
 
 function handleMessage ({data}) {
-  console.log('received message ', data);
-  appendMessage(data, 'receiver');
+  if ($self.resolveChatChannel && data === INIT_MESSAGE) {
+    console.log('chat channel initiated');
+    $self.resolveChatChannel();
+    $self.resolveChatChannel = null;
+  } else {
+    console.log('received message ', data);
+    appendMessage(data, 'receiver');
+  }
 }
 
 function handleChatRoom(e) {
@@ -91,12 +103,14 @@ function handleChatRoom(e) {
   const form = e.target;
   const input = form.querySelector('#message');
   const message = input.value;
-
-  $peer.chatChannel.send(message);
-  console.log('Sender msg:', message);
   input.value = '';
-  appendMessage(message, 'sender');
 
+  // Make sure chat channel is open before sending message
+  handleMessenger().then(() => {
+    $peer.chatChannel.send(message);
+    console.log('Sender msg:', message);
+    appendMessage(message, 'sender');
+  })
 }
 
 function appendMessage(message, msgClass) {
@@ -116,7 +130,6 @@ function joinChat() {
 function leaveChat() {
    sc.close();
 }
-
 
 /* WebRTC Events */
 function establishCallFeatures(peer) {
@@ -145,8 +158,7 @@ async function handleRtcNegotiation() {
     const offer = await $peer.connection.createOffer();
     await $peer.connection.setLocalDescription(offer);
   }finally {
-    // finally, however this was done, send the
-    // localDescription to the remote peer
+    // finally, however this was done, send the localDescription to the remote peer
     sc.emit('signal', { description:
       $peer.connection.localDescription });
   }
@@ -174,6 +186,7 @@ function handleRtcDataChannel(dataChannelEvent){
    dataChannelEvent.channel.onmessage = handleMessage;
    $peer.chatChannel = dataChannelEvent.channel;
    showChatRoom();
+   $peer.chatChannel.send(INIT_MESSAGE);
 }
 
 
@@ -219,6 +232,11 @@ async function handleChannelSignal({ description, candidate }) {
     const offerCollision = description.type === 'offer' && !readyForOffer;
 
     console.log('offerCollision: ', offerCollision);
+    //inPolite && have offerCollision
+    //offerCollision will be true if type is offer && not readyForOffer
+    //but I'm inPolite I'm aways providing offer for the first connection
+    //so offerCollision only occurs if it's not the first connection and the remote end initiate the offerCollision
+    //and I'm not currently making an offer, and the connection is not stable or I'm about to accepting the answer from the remote end.
     $self.isIgnoringOffer = !$self.isPolite && offerCollision;
     console.log('isIgnoringOffer: ', $self.isIgnoringOffer);
 
@@ -228,7 +246,7 @@ async function handleChannelSignal({ description, candidate }) {
 
     console.log('description type: ', description.type);
     $self.isSettingRemoteAnswerPending = description.type === 'answer';
-    $peer.connection.setRemoteDescription(description);
+    await $peer.connection.setRemoteDescription(description);
     $self.isSettingRemoteAnswerPending = false;
 
     if (description.type === 'offer') {
