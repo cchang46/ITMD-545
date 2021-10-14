@@ -159,14 +159,10 @@ async function handleRtcNegotiation() {
     await $peer.connection.setLocalDescription(offer);
   }finally {
     // finally, however this was done, send the localDescription to the remote peer
+    console.log('Send description...');
     sc.emit('signal', { description:
       $peer.connection.localDescription });
   }
-
-  $self.isMakingOffer = false;
-  console.log('Send description...');
-  sc.emit('signal', { description:
-    $peer.connection.localDescription });
   $self.isMakingOffer = false;
 }
 function handleIceCandidate({ candidate }) {
