@@ -4,7 +4,7 @@ const INIT_MESSAGE = '====INIT_MESSAGE====';
 
 const $self = {
   rtcConfig: null,
-  constraints: { audio: false, video: true },
+  constraints: { audio: true, video: true },
   isPolite: false,
   isMakingOffer: false,
   isIgnoringOffer: false,
@@ -77,6 +77,20 @@ chatRoom.addEventListener('submit', handleChatRoom);
 
 const messenger =  document.querySelector('#messenger');
 messenger.addEventListener('click', showChatRoom);
+
+const audioBtn = document.querySelector('#audio');
+audioBtn.addEventListener('click', toggleAudio);
+
+function toggleAudio(e) {
+  const audio = $self.stream.getAudioTracks()[0];
+  if (audio.enabled) {
+    audio.enabled = false;
+    e.target.innerText = 'Unmute';
+  } else {
+    audio.enabled = true;
+    e.target.innerText = 'Mute';
+  }
+}
 
 function handleMessenger() {
   if(!$self.chatChannelPromise) {
@@ -163,8 +177,10 @@ function leaveChat() {
 
 /* WebRTC Events */
 function establishCallFeatures(peer) {
-  peer.connection.addTrack($self.stream.getTracks()[0],
-      $self.stream);
+  for (let track of $self.stream.getTracks()) {
+    console.log(track);
+    peer.connection.addTrack(track, $self.stream);
+  }
 }
 
 function registerRtcEvents(peer) {

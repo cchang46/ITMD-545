@@ -34,6 +34,7 @@ button {
 
 #videos {
   width: 100%;
+  position: relative;
 }
 
 video {
@@ -45,6 +46,12 @@ video {
 #self-video {
   width: 33%;
   max-width: 266px;
+}
+
+#peer-video[style*="display: block"] + #self-video {
+  position: absolute;
+  bottom: 40px;
+  right: 5px;
 }
 
 #peer-video {
@@ -109,7 +116,7 @@ text-align: left;
     width: 60%;
   }
 
-  #toolbar {
+  #messenger {
     display: none;
   }
 
