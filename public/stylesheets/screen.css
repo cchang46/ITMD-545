@@ -72,11 +72,13 @@ video {
 }
 
 #messages .sender {
-
+background-color: #C1DDDF;
+text-align: right;
 }
 
 #messages .receiver {
-
+background-color: #DCDCDC;
+text-align: left;
 }
 
 #message {

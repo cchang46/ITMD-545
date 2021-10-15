@@ -4,8 +4,6 @@ const io = require('socket.io')();
 const logger = require('morgan');
 const path = require('path');
 
-
-
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 
@@ -20,6 +18,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
+function prepareNamespace() {
+  const ns = Math.random().toString().substring(2, 7);
+  console.log('Created new namespace', ns);
+  return ns;
+}
+
+// a simple way to give each pet room unique namespace
+const pets = {};
+['yuuki', 'sandy', 'ted', 'dolly', 'dexter', 'louis'].forEach((name) => {
+  pets[name] = prepareNamespace();
+});
+
+const rootNamespace = io.of('/');
+
+rootNamespace.on('connection', function(socket) {
+  console.log('on root namespace');
+  socket.emit('pets', pets);
+});
+
 const namespaces = io.of(/^\/[0-9]{5}$/);
 
 namespaces.on('connection', function(socket) {
@@ -28,7 +45,7 @@ namespaces.on('connection', function(socket) {
 
   // listen for signals
   socket.on('signal', function(signal) {
-      console.log(signal);
+      // console.log(signal);
       socket.broadcast.emit('signal', signal);
     })
   // listen for disconnects

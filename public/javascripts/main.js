@@ -12,7 +12,7 @@ const $self = {
 };
 
 const $peer = {
-  connection: new RTCPeerConnection($self.rtcConfig)
+  connection: null
 };
 
 async function requestUserMedia(constraints) {
@@ -40,28 +40,32 @@ function stopUserMedia() {
 /**
 * Socket Server Events and Callbacks
 */
+const rootSc = io('/', { autoConnect: false});
+rootSc.on('pets', handlePets);
+rootSc.open();
 
-const namespace = prepareNamespace(window.location.hash, true);
+let sc;
 
-const sc = io(`/${namespace}`, { autoConnect: false});
-
-registerChannelEvents();
-
-const button = document.querySelector('#call-yuuki');
-button.addEventListener('click', handleButton);
-/* DOM Events */
-function handleButton(e) {
-  const button = e.target;
-  if (button.className === 'join') {
-    button.className = 'leave';
-    button.innerText = 'Leave Chat';
-    requestUserMedia($self.constraints).then(() => joinChat());
-  } else {
-    button.className = 'join';
-    button.innerText = 'Join Chat';
-    stopUserMedia();
-    leaveChat();
-  }
+function handlePets(pets) {
+  console.log(pets);
+  // binding listeners for all pets
+  Object.keys(pets).forEach((name) => {
+    const button = document.querySelector(`#call-${name}`);
+    button.addEventListener('click', (e) => {
+      const button = e.target;
+      if (button.className === 'join') {
+        const ns = pets[name];
+        window.location.hash = ns;
+        sc = io(`/${ns}`, { autoConnect: false});
+        registerChannelEvents();
+        button.className = 'leave';
+        button.innerText = 'Leave Chat';
+        requestUserMedia($self.constraints).then(() => joinChat());
+      } else {
+        leaveChat();
+      }
+    });
+  });
 }
 
 /* Chat Room */
@@ -122,13 +126,28 @@ function appendMessage(message, msgClass) {
 }
 
 function joinChat() {
-   sc.open();
-   registerRtcEvents($peer);
-   establishCallFeatures($peer);
+  window.scrollTo(0, 0);
+  $peer.connection = new RTCPeerConnection($self.rtcConfig);
+  sc.open();
+  registerRtcEvents($peer);
+  establishCallFeatures($peer);
 }
 
 function leaveChat() {
-   sc.close();
+  const button = document.querySelector('.leave');
+  button.className = 'join';
+  button.innerText = 'Join Chat';
+  stopUserMedia();
+
+  if (sc) {
+    sc.disconnect();
+    sc = null;
+  }
+
+  if ($peer.connection) {
+    $peer.connection.close();
+    $peer.connection = null;
+  }
 }
 
 /* WebRTC Events */
@@ -211,6 +230,7 @@ function handleChannelConnectedPeer() {
 }
 function handleChannelDisconnectedPeer() {
   console.log('Heard disconnected peer event!');
+  leaveChat();
 }
 async function handleChannelSignal({ description, candidate }) {
   console.log('Heard signal event!');
@@ -268,19 +288,4 @@ async function handleChannelSignal({ description, candidate }) {
       }
     }
   }
-}
-
-/**
- *  Utility Functions
- */
-function prepareNamespace(hash, set_location) {
-  let ns = hash.replace(/^#/, ''); // remove # from the hash
-  if (/^[0-9]{5}$/.test(ns)) {
-    console.log('Checked existing namespace', ns);
-    return ns;
-  }
-  ns = Math.random().toString().substring(2, 7);
-  console.log('Created new namespace', ns);
-  if (set_location) window.location.hash = ns;
-  return ns;
 }
