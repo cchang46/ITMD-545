@@ -19,15 +19,15 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 function prepareNamespace() {
-  const ns = Math.random().toString().substring(2, 7);
-  console.log('Created new namespace', ns);
-  return ns;
+  return Math.random().toString().substring(2, 7);
 }
 
 // a simple way to give each pet room unique namespace
 const pets = {};
 ['yuuki', 'sandy', 'ted', 'dolly', 'dexter', 'louis'].forEach((name) => {
-  pets[name] = prepareNamespace();
+  const ns = prepareNamespace();
+  pets[name] = ns;
+  console.log('Created new namespace for', name, ns);
 });
 
 const rootNamespace = io.of('/');

@@ -18,8 +18,11 @@ const $peer = {
 async function requestUserMedia(constraints) {
   const video = document.querySelector('#self-video');
   $self.stream = await navigator.mediaDevices.getUserMedia(constraints);
-  video.srcObject = $self.stream;
   document.querySelector('#live-chat').style.display = 'flex';
+  // Safari doesn't show video properly if update too quick sometimes, so wait for 1 second
+  setTimeout(() => {
+    video.srcObject = $self.stream;
+  }, 1000);
   return $self.stream;
 }
 
@@ -77,11 +80,16 @@ messenger.addEventListener('click', showChatRoom);
 
 function handleMessenger() {
   if(!$self.chatChannelPromise) {
-    $self.chatChannelPromise = new Promise((resolve, reject) => {
-      $self.resolveChatChannel = resolve;
-      $peer.chatChannel = $peer.connection.createDataChannel('chat');
-      $peer.chatChannel.onmessage = handleMessage;
-    });
+    if ($peer.chatChannel) {
+      // chat channel is already established
+      $self.chatChannelPromise = Promise.resolve();
+    } else  {
+      $self.chatChannelPromise = new Promise((resolve, reject) => {
+        $self.resolveChatChannel = resolve;
+        $peer.chatChannel = $peer.connection.createDataChannel('chat');
+        $peer.chatChannel.onmessage = handleMessage;
+      });
+    }
   }
 
   return $self.chatChannelPromise;
@@ -148,6 +156,9 @@ function leaveChat() {
     $peer.connection.close();
     $peer.connection = null;
   }
+
+  $self.chatChannelPromise = null;
+  $peer.chatChannel = null;
 }
 
 /* WebRTC Events */
@@ -169,6 +180,10 @@ function registerRtcEvents(peer) {
 
 async function handleRtcNegotiation() {
   console.log('RTC negotiation needed...');
+  if ($self.skipOffer) {
+    console.log('Skip offer');
+    return;
+  }
   // send an SDP description
   $self.isMakingOffer = true;
   try {
@@ -201,7 +216,16 @@ function handleRtcDataChannel(dataChannelEvent){
    dataChannelEvent.channel.onmessage = handleMessage;
    $peer.chatChannel = dataChannelEvent.channel;
    showChatRoom();
-   $peer.chatChannel.send(INIT_MESSAGE);
+
+   try {
+     $peer.chatChannel.send(INIT_MESSAGE);
+   } catch (e) {
+     // For Safari, it's too quick to fire, so wait til next event loop
+     console.error(e);
+     setTimeout(() => {
+       $peer.chatChannel.send(INIT_MESSAGE);
+     }, 0);
+   }
 }
 
 
@@ -232,7 +256,7 @@ function handleChannelDisconnectedPeer() {
   console.log('Heard disconnected peer event!');
   leaveChat();
 }
-async function handleChannelSignal({ description, candidate }) {
+async function handleChannelSignal({ description, candidate, resend }) {
   console.log('Heard signal event!');
   if (description) {
     console.log('Received SDP Signal:', description);
@@ -262,7 +286,16 @@ async function handleChannelSignal({ description, candidate }) {
 
     console.log('description type: ', description.type);
     $self.isSettingRemoteAnswerPending = description.type === 'answer';
-    await $peer.connection.setRemoteDescription(description);
+    try {
+      await $peer.connection.setRemoteDescription(description);
+    } catch(e) {
+      console.error('Cannot set remote description', e);
+      if (!$self.isSettingRemoteAnswerPending && $peer.connection.signalingState === 'have-local-offer') {
+        // the browser (Safari) can't handle state conflict, so reset myself and tell remote end to send again
+        resetConnection();
+      }
+      return;
+    }
     $self.isSettingRemoteAnswerPending = false;
 
     if (description.type === 'offer') {
@@ -272,9 +305,12 @@ async function handleChannelSignal({ description, candidate }) {
         const answer = await $peer.connection.createAnswer();
         await $peer.connection.setLocalDescription(answer);
       } finally {
+        console.log('Send answer');
+        console.log($peer.connection.localDescription);
         sc.emit('signal',
           { description:
             $peer.connection.localDescription });
+        $self.skipOffer = false;
       }
     }
 
@@ -287,5 +323,20 @@ async function handleChannelSignal({ description, candidate }) {
         console.error('Cannot add ICE candidate for peer', e);
       }
     }
+  } else if (resend) {
+    console.log('Received resend signal')
+    handleRtcNegotiation();
   }
+}
+
+function resetConnection() {
+  $self.isMakingOffer = false;
+  $self.isIgnoringOffer = false;
+  $self.isSettingRemoteAnswerPending = false;
+  $peer.connection.close();
+  $peer.connection = new RTCPeerConnection($self.rtcConfig);
+  registerRtcEvents($peer);
+  $self.skipOffer = true;
+  establishCallFeatures($peer);
+  sc.emit('signal', { resend: true });
 }
